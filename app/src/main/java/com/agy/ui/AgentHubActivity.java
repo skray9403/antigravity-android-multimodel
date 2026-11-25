@@ -8,6 +8,8 @@ import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.Gravity;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
@@ -23,6 +25,13 @@ import org.json.JSONObject;
 
 /** Native, user-controlled handoff screen for existing ChatGPT/Gemini subscriptions. */
 public final class AgentHubActivity extends Activity {
+    private final Handler handler = new Handler(Looper.getMainLooper());
+    private final Runnable refreshTask = new Runnable() {
+        @Override public void run() {
+            refreshState();
+            handler.postDelayed(this, 1000);
+        }
+    };
     private String selectedProvider = "chatgpt";
     private TextView stateView;
     private TextView stagedView;
@@ -202,7 +211,8 @@ public final class AgentHubActivity extends Activity {
 
     private void refreshState() {
         JSONObject state = AgentSessionController.statusJson();
-        selectedProvider = state.optString("provider", selectedProvider);
+        String stagedProvider = state.optString("provider", "");
+        if (!stagedProvider.isEmpty()) selectedProvider = stagedProvider;
         String request = state.optString("request_id", "");
         String status = state.optString("status", "idle");
         stateView.setText("Provider: " + (selectedProvider.isEmpty() ? "none" : selectedProvider)
@@ -251,6 +261,17 @@ public final class AgentHubActivity extends Activity {
 
     private int dp(float value) {
         return (int) (value * getResources().getDisplayMetrics().density + 0.5f);
+    }
+
+    @Override protected void onResume() {
+        super.onResume();
+        handler.removeCallbacks(refreshTask);
+        handler.post(refreshTask);
+    }
+
+    @Override protected void onPause() {
+        handler.removeCallbacks(refreshTask);
+        super.onPause();
     }
 
     private void toast(String message) {

@@ -118,6 +118,11 @@ public final class AgentSessionController {
             return out;
         }
         synchronized (LOCK) {
+            if (!prompt.isEmpty() && prompt.equals(copiedText.trim())) {
+                try { out.put("ok", false); out.put("error", "Clipboard still contains the staged prompt. Copy the provider's reply first."); }
+                catch (Exception ignored) {}
+                return out;
+            }
             if (requestId.isEmpty()) {
                 try { out.put("ok", false); out.put("error", "No staged request exists. Stage a question first."); }
                 catch (Exception ignored) {}
