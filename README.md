@@ -129,3 +129,10 @@ antigravity/
 <div align="center">
   <sub>Licensed under the <a href="LICENSE">Apache 2.0 License</a></sub>
 </div>
+
+
+## ChatGPT and Gemini subscription handoff
+
+This fork includes a native **Agent sessions** screen for staging prompts and importing replies from your existing ChatGPT and Gemini subscriptions. It does not use model APIs or require API keys. Provider interaction is deliberately user-controlled: copy the staged prompt into the signed-in Chrome chat, send it yourself, copy the reply, then import it in Agent sessions. This avoids automated extraction of ChatGPT output.
+
+See [Browser Session Agents](docs/BROWSER_SESSION_AGENTS.md) for setup and the Python bridge modules `bridge.agents` and `bridge.coordinator`.

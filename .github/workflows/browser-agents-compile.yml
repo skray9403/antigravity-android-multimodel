@@ -1,0 +1,91 @@
+name: Browser Agents APK Build
+
+on:
+  push:
+    branches:
+      - feature/browser-session-agents
+    paths:
+      - "app/src/main/**"
+      - "modules/builder/**"
+      - "modules/env/bridge/**"
+      - "modules/runner/**"
+      - "web/**"
+      - "env/**"
+      - "plugins/**"
+      - "tools/**"
+      - "config/**"
+      - ".github/workflows/browser-agents-compile.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "app/src/main/**"
+      - "modules/builder/**"
+      - "modules/env/bridge/**"
+      - "modules/runner/**"
+      - "web/**"
+      - "env/**"
+      - "plugins/**"
+      - "tools/**"
+      - "config/**"
+      - ".github/workflows/browser-agents-compile.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Android build tools
+        run: |
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort | tail -n 1)"
+          test -x "$SDKMANAGER"
+          echo "$(dirname "$SDKMANAGER")" >> "$GITHUB_PATH"
+          echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
+          yes | "$SDKMANAGER" --licenses
+          "$SDKMANAGER" "platform-tools" "build-tools;35.0.0"
+          echo "$ANDROID_HOME/build-tools/35.0.0" >> "$GITHUB_PATH"
+
+      - name: Verify required build inputs
+        run: |
+          test -f tools/android.jar
+          test -f tools/r8.jar
+          test -f tools/debug.keystore
+          test -f config/app.env
+          command -v aapt
+          command -v apksigner
+
+      - name: Build, sign and verify APK
+        run: |
+          bash modules/builder/build_apk.sh
+          test -s dist/antigravity.apk
+          apksigner verify --verbose dist/antigravity.apk
+
+      - name: Check Python bridge syntax
+        run: |
+          python3 -m py_compile modules/env/bridge/agents.py modules/env/bridge/coordinator.py
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: antigravity-browser-agents-apk
+          path: dist/antigravity.apk
+          if-no-files-found: error
+          retention-days: 14

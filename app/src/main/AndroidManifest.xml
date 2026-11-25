@@ -28,6 +28,7 @@
             <action android:name="android.intent.action.OPEN_DOCUMENT" />
             <data android:mimeType="*/*" />
         </intent>
+        <package android:name="com.android.chrome" />
     </queries>
 
     <uses-permission android:name="android.permission.INTERNET" />
@@ -116,6 +117,13 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name="com.agy.ui.AgentHubActivity"
+            android:exported="false"
+            android:label="Agent sessions"
+            android:theme="@style/AppTheme"
+            android:windowSoftInputMode="adjustResize" />
 
         <receiver
             android:name="com.agy.runtime.TorchReceiver"
