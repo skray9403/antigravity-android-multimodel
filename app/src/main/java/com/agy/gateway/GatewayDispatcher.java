@@ -1,6 +1,7 @@
 package com.agy.gateway;
 
 import android.content.Context;
+import com.agy.agents.AgentSessionController;
 import com.agy.gateway.handlers.*;
 import com.agy.log.CrashRecorder;
 import com.agy.log.LogRingBuffer;
@@ -32,11 +33,18 @@ public final class GatewayDispatcher {
     }
 
     public JSONObject dispatch(String command, JSONObject payload) {
-        if (payload == null) {
-            payload = new JSONObject();
-        }
+        if (payload == null) payload = new JSONObject();
 
         switch (command) {
+            case "agent_status":
+                return AgentSessionController.statusJson();
+            case "agent_stage":
+                return AgentSessionController.stagePrompt(
+                        payload.optString("provider", ""), payload.optString("prompt", ""));
+            case "agent_read":
+                return AgentSessionController.readResponse(payload.optString("request_id", ""));
+            case "agent_clear":
+                return AgentSessionController.clear();
             case "notify":
                 return notificationHandler.handle(payload);
             case "open_url":

@@ -1,0 +1,54 @@
+name: Browser Agents Java Compile
+
+on:
+  push:
+    branches:
+      - feature/browser-session-agents
+    paths:
+      - "app/src/main/**"
+      - "modules/builder/**"
+      - "modules/env/bridge/**"
+      - ".github/workflows/browser-agents-compile.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "app/src/main/**"
+      - "modules/builder/**"
+      - "modules/env/bridge/**"
+      - ".github/workflows/browser-agents-compile.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install aapt
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y aapt
+
+      - name: Generate Android resources and compile Java
+        run: |
+          python3 modules/builder/01_gen_config.py build
+          bash modules/builder/02_r_java.sh build/gen build/AndroidManifest.xml app/src/main/res tools/android.jar build/res
+          bash modules/builder/03_compile_java.sh build/obj build/gen app/src/main/java tools/android.jar
+
+      - name: Check Python bridge syntax
+        run: |
+          python3 -m py_compile modules/env/bridge/agents.py modules/env/bridge/coordinator.py

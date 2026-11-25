@@ -19,6 +19,10 @@ import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
 import android.widget.FrameLayout;
+import android.widget.TextView;
+import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
+import android.view.Gravity;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -70,6 +74,7 @@ public class MainActivity extends Activity
     private WebViewHost webViewHost;
     private SplashController splash;
     private FrameLayout rootLayout;
+    private TextView agentsEntry;
 
     private boolean appLoaded = false;
     private boolean activityResumed = false;
@@ -162,6 +167,7 @@ public class MainActivity extends Activity
         splash = new SplashController(this, themeManager, rootLayout);
         splash.setRetryListener(this::retryCore);
         rootLayout.addView(splash.view(), ViewParams.full());
+        installAgentsEntry();
         splash.loadInitial();
 
         splash.installExitAnimation(this);
@@ -170,6 +176,35 @@ public class MainActivity extends Activity
         requestAppPermissions();
 
         startCoreService();
+    }
+
+
+    private void installAgentsEntry() {
+        agentsEntry = new TextView(this);
+        agentsEntry.setText("AGENTS");
+        agentsEntry.setTextSize(12);
+        agentsEntry.setTypeface(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD);
+        agentsEntry.setTextColor(Color.WHITE);
+        agentsEntry.setGravity(Gravity.CENTER);
+        agentsEntry.setPadding(dp(16), dp(10), dp(16), dp(10));
+        GradientDrawable background = new GradientDrawable();
+        background.setColor(0xff394252);
+        background.setCornerRadius(dp(22));
+        agentsEntry.setBackground(background);
+        agentsEntry.setElevation(dp(8));
+        agentsEntry.setVisibility(View.GONE);
+        agentsEntry.setOnClickListener(v ->
+                startActivity(new Intent(this, AgentHubActivity.class)));
+        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT,
+                Gravity.TOP | Gravity.END);
+        params.topMargin = dp(10);
+        params.rightMargin = dp(12);
+        rootLayout.addView(agentsEntry, params);
+    }
+
+    private int dp(float value) {
+        return (int) (value * getResources().getDisplayMetrics().density + 0.5f);
     }
 
     private void startCoreService() {
@@ -218,6 +253,7 @@ public class MainActivity extends Activity
     public void dismissSplash() {
         Log.i(TAG, "dismissSplash: fading out splashView (280ms)");
         splash.dismiss();
+        if (agentsEntry != null) agentsEntry.setVisibility(View.VISIBLE);
     }
 
     public boolean isDesktopMode() {
