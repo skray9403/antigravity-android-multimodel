@@ -1,4 +1,4 @@
-name: Browser Agents Java Compile
+name: Browser Agents APK Build
 
 on:
   push:
@@ -8,6 +8,12 @@ on:
       - "app/src/main/**"
       - "modules/builder/**"
       - "modules/env/bridge/**"
+      - "modules/runner/**"
+      - "web/**"
+      - "env/**"
+      - "plugins/**"
+      - "tools/**"
+      - "config/**"
       - ".github/workflows/browser-agents-compile.yml"
   pull_request:
     branches:
@@ -16,13 +22,19 @@ on:
       - "app/src/main/**"
       - "modules/builder/**"
       - "modules/env/bridge/**"
+      - "modules/runner/**"
+      - "web/**"
+      - "env/**"
+      - "plugins/**"
+      - "tools/**"
+      - "config/**"
       - ".github/workflows/browser-agents-compile.yml"
 
 permissions:
   contents: read
 
 jobs:
-  compile:
+  build-apk:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -38,17 +50,35 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install aapt
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y aapt
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
 
-      - name: Generate Android resources and compile Java
+      - name: Install Android build tools
         run: |
-          python3 modules/builder/01_gen_config.py build
-          bash modules/builder/02_r_java.sh build/gen build/AndroidManifest.xml app/src/main/res tools/android.jar build/res
-          bash modules/builder/03_compile_java.sh build/obj build/gen app/src/main/java tools/android.jar
+          sdkmanager "platform-tools" "build-tools;35.0.0"
+          echo "$ANDROID_HOME/build-tools/35.0.0" >> "$GITHUB_PATH"
+
+      - name: Verify required build inputs
+        run: |
+          test -f tools/android.jar
+          test -f tools/r8.jar
+          test -f tools/debug.keystore
+          test -f config/app.env
+
+      - name: Build, sign and verify APK
+        run: |
+          bash modules/builder/build_apk.sh
+          test -s dist/antigravity.apk
+          apksigner verify --verbose dist/antigravity.apk
 
       - name: Check Python bridge syntax
         run: |
           python3 -m py_compile modules/env/bridge/agents.py modules/env/bridge/coordinator.py
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: antigravity-browser-agents-apk
+          path: dist/antigravity.apk
+          if-no-files-found: error
+          retention-days: 14
